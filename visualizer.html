@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<head>
+	<style>
+		@import url(http://fonts.googleapis.com/css?family=Oswald);
+
+		body {
+		  overflow: hidden;
+		  background: #efefef;
+		}
+
+		#Controls {
+		  position: absolute;
+		  margin: auto;
+		  top: 1%;
+		  left: 50;
+		  /*right: 0; */
+		  width: 150px;
+		  height: 44px;
+		  background: #4CAF50;
+		  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+		  text-align: center;
+		  line-height: 44px;
+		  color: #fff;
+		  font-family: 'Oswald';
+		  cursor: pointer;
+		  user-select: none;
+		}
+
+		canvas {
+		  position: absolute;
+		}
+
+		#ChromeOnly {
+		  position: absolute;
+		  width: 100vw;
+		  height: 100vh;
+		  background: #F44336;
+		  text-align: center;
+		  line-height: 100vh;
+		  font-family: 'Oswald';
+		  color: #fff;
+		  text-shadow: 0 10px 20px rbga(0, 0, 0, 0.2);
+		  font-size: 2vw;
+		  visibility: hidden;
+		  display: none;
+		}
+	</style>
+	<link rel="stylesheet" href="microphone/microphone.min.css">
+</head>
+<body>
+
+	<audio src="test.mp3"></audio>
+	<div id="Controls">Play</div>
+
+	<canvas id="container" style="z-index: 0"></canvas>
+	<canvas id="visualizer" style="z-index: 1"></canvas>
+
+	<script>
+		/***Globals***/
+		var canvasContainer = document.getElementById('container'),
+			canvasVisualizer = document.getElementById('visualizer'),
+			canvasContext1 = canvasContainer.getContext('2d'),
+			canvasContext2 = canvasVisualizer.getContext('2d'),
+			centerX = window.innerWidth / 2,
+			centerY = window.innerHeight / 2.1,
+			radius = window.innerHeight / 2.3;
+
+		/***Audio Section***/
+		var audioContext = new AudioContext();
+		var audio = document.getElementsByTagName('audio')[0];
+
+		var source = audioContext.createMediaElementSource(audio);
+		var analyser = audioContext.createAnalyser();
+
+		source.connect(analyser);
+		analyser.connect(audioContext.destination);
+
+		var bufferLength = analyser.frequencyBinCount;
+		var frequencyData = new Uint8Array(bufferLength);
+
+		/***Canvas Drawing***/	
+		canvasContainer.width = window.innerWidth;
+		canvasContainer.height = window.innerHeight;
+
+		canvasVisualizer.width = canvasContainer.width / 1.2;
+		canvasVisualizer.height = canvasContainer.height / 1.2;
+		
+		// canvasContext1.beginPath();
+		// canvasContext1.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
+		// canvasContext1.stroke();
+
+		function Render() {
+			canvasContext2.clearRect(0, 0, canvasVisualizer.width, canvasVisualizer.height);
+			analyser.getByteFrequencyData(frequencyData);
+
+			var frequencyWidth = (canvasVisualizer.width / bufferLength),
+				frequencyHeight = 0,
+				x = 0;
+
+			for (var increment = 0; increment < bufferLength; increment++) {
+				frequencyHeight = frequencyData[increment] * (canvasVisualizer.height * 0.003);
+				canvasContext2.fillStyle = 'rgb(255, 120, 120)';
+				canvasContext2.fillRect(x, canvasVisualizer.height - frequencyHeight, frequencyWidth, frequencyHeight);
+				x += frequencyWidth + 3.5;
+			}
+
+			call = requestAnimationFrame(Render);
+		} 
+
+		var isPlaying = false;
+		var controls = document.getElementById('Controls');
+
+		controls.addEventListener('click', function() {
+			isPlaying = !isPlaying;
+
+			if (isPlaying) {
+			  controls.textContent = "Pause";
+			  controls.style.background = "#F44336";
+			  audio.play();
+			  Render();
+			} else {
+			  controls.textContent = "Play";
+			  controls.style.background = "#4CAF50";
+			  audio.pause();
+			  cancelAnimationFrame(call);
+			}
+		});
+
+		window.addEventListener('resize', function() {
+			canvasContainer.width = window.innerWidth;
+			canvasContainer.height = window.innerHeight;
+		});
+
+	</script>
+
+</body>
+</html>

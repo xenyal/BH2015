@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<head>
+<style>
+	@import url(http://fonts.googleapis.com/css?family=Oswald);
+
+	body {
+	  overflow: hidden;
+	  background: #000;
+	}
+
+	#Controls {
+	  position: absolute;
+	  margin: auto;
+	  top: 1%;
+	  left: 50;
+	  width: 150px;
+	  height: 44px;
+	  background: #4CAF50;
+	  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+	  text-align: center;
+	  line-height: 44px;
+	  color: #fff;
+	  font-family: 'Oswald';
+	  cursor: pointer;
+	  user-select: none;
+	}
+
+	canvas {
+	  position: absolute;
+	}
+
+	#ChromeOnly {
+	  position: absolute;
+	  width: 100vw;
+	  height: 100vh;
+	  background: #F44336;
+	  text-align: center;
+	  line-height: 100vh;
+	  font-family: 'Oswald';
+	  color: #fff;
+	  text-shadow: 0 10px 20px rbga(0, 0, 0, 0.2);
+	  font-size: 2vw;
+	  visibility: hidden;
+	  display: none;
+	}
+</style>
+</head>
+<body>
+
+<audio src="test.mp3"></audio>
+<canvas></canvas>
+<div id="Controls">Play</div>
+
+<script>
+
+	var canvas = document.getElementsByTagName('canvas')[0],
+		canvasContext = canvas.getContext('2d'),
+		centerX = window.innerWidth / 3,
+		centerY = window.innerHeight / 3,
+		radius = window.innerHeight / 3;
+
+	canvas.width = window.innerWidth;
+	canvas.height = window.innerHeight / 1.2;
+
+	var audioContext = new AudioContext();
+	var audio = document.getElementsByTagName('audio')[0];
+
+	var source = audioContext.createMediaElementSource(audio);
+	var analyser = audioContext.createAnalyser();
+
+	source.connect(analyser);
+	analyser.connect(audioContext.destination);
+
+	var bufferLength = analyser.frequencyBinCount;
+	var frequencyData = new Uint8Array(bufferLength);
+
+	// canvasContext.beginPath();
+	// canvasContext.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
+	// canvasContext.stroke();
+
+	function Render() {
+
+		canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+		analyser.getByteFrequencyData(frequencyData);
+
+		var frequencyWidth = (canvas.width / bufferLength) + 1,
+			frequencyHeight = 0,
+			x = 0,
+			r = 40, 
+			g = 120,
+			b = 210;
+
+		for (var increment = 0; increment < bufferLength; increment++) {
+			frequencyHeight = frequencyData[increment] * (canvas.height * 0.004);
+
+			var r = ( r > 255 ? r = 0 : ++r),
+				g = ( g > 255 ? g = 0 : ++g),
+				b = ( b > 255 ? b = 0 : ++b);
+
+			canvasContext.fillStyle = 'rgb(' + r + ','+ g + ',' + b + ')';
+
+			canvasContext.fillRect(x, canvas.height - frequencyHeight, frequencyWidth, frequencyHeight);
+			x += frequencyWidth + 2.8;
+		}
+
+		call = requestAnimationFrame(Render);
+	} 
+
+	function UpdatePath() {
+
+	}
+
+	var isPlaying = false;
+	var controls = document.getElementById('Controls');
+
+	controls.addEventListener('click', function() {
+		isPlaying = !isPlaying;
+
+		if (isPlaying) {
+		  controls.textContent = "Pause";
+		  controls.style.background = "#F44336";
+		  audio.play();
+		  Render();
+		} else {
+		  controls.textContent = "Play";
+		  controls.style.background = "#4CAF50";
+		  audio.pause();
+		  cancelAnimationFrame(call);
+		}
+	});
+
+	window.addEventListener('resize', function() {
+		canvas.width = window.innerWidth;
+		canvas.height = window.innerHeight;
+	});
+
+</script>
+
+</body>
+</html>
